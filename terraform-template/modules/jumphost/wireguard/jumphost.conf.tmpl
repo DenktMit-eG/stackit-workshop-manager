@@ -1,0 +1,9 @@
+[Interface]
+PrivateKey = ${wg0_client_private_key}
+Address = 192.168.123.2/32
+
+[Peer]
+PublicKey = ${wg0_server_public_key}
+Endpoint = ${jumphost_fqdn}:${wg0_port}
+AllowedIPs = 0.0.0.0/0
+PersistentKeepalive = 25

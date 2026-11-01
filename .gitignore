@@ -1,0 +1,13 @@
+
+keys/
+mail/
+screenshots/
+/stackit-ws-manager
+users.yaml
+users.yaml.*
+users.yaml.lock
+users*.yaml
+*.swp
+*~
+terraform/
+users-*.yaml

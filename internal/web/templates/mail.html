@@ -1,0 +1,15 @@
+{{define "mail"}}{{template "head" (dict "Title" .Entry.Message.Subject "Subtitle" .Slug "Auth" false)}}
+<p><a href="/users/{{.Slug}}">← {{.Slug}}</a></p>
+<div class="card">
+  <h3>{{.Entry.Message.Subject}}</h3>
+  <dl>
+    <dt>from</dt><dd>{{.Entry.Message.FromHeader}}</dd>
+    <dt>to</dt><dd>{{range .Entry.Message.To}}{{.String}} {{end}}</dd>
+    <dt>received</dt><dd>{{time .Entry.Message.Created}}</dd>
+  </dl>
+  {{if .HasHTML}}<h4>HTML</h4><iframe src="/users/{{.Slug}}/mail/{{.Entry.File}}/html" sandbox style="width:100%;height:60vh;border:1px solid #ddd;background:#fff"></iframe>{{end}}
+  <h4>Text</h4>
+  <pre>{{.Text}}</pre>
+  <details><summary>Headers</summary><dl>{{range $h := .Headers}}<dt>{{$h}}</dt><dd>{{join (index $.Entry.Message.Content.Headers $h) ", "}}</dd>{{end}}</dl></details>
+</div>
+{{template "foot" .}}{{end}}

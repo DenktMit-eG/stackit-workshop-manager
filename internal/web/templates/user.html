@@ -1,0 +1,86 @@
+{{define "user"}}{{template "head" (dict "Title" .Slug "Subtitle" .Username "Auth" false)}}
+<p><a href="/">← all users</a></p>
+<div data-init="@get('/users/{{.Slug}}/events'); @get('/otps?slug={{.Slug}}&tag=span&target=otp-detail')">
+{{template "detail" .}}
+</div>
+{{template "foot" .}}{{end}}
+
+{{define "detail"}}<div id="detail" class="cards">
+  <div class="card">
+    <h3>{{.Slug}} <span class="badge {{.StateClass}}">{{.State}}</span></h3>
+    <dl>
+      <dt>username</dt><dd>{{template "copyfield" (dict "Text" .Username "Label" "username")}}</dd>
+      <dt>password</dt><dd>{{template "copyfield" (dict "Text" .Password "Label" "password")}}</dd>
+      <dt>OTP</dt><dd>{{template "otpcell" (dict "ID" "otp-detail" "Tag" "span" "Code" .OTP "Valid" .OTPValid "HasSecret" (ne .OTPSecret ""))}}</dd>
+      <dt>OTP secret</dt><dd>{{if .OTPSecret}}{{template "copyfield" (dict "Text" .OTPSecret "Label" "secret")}}{{else}}<span class="muted">—</span>{{end}}</dd>
+      <dt>recovery codes</dt><dd>{{if .RecoveryCodes}}{{template "copyfield" (dict "Text" (join .RecoveryCodes " ") "Label" "recovery codes" "Size" 40)}}{{else}}<span class="muted">—</span>{{end}}</dd>
+      <dt>step</dt><dd>{{.Step}}</dd>
+      <dt>STACKIT project</dt><dd>{{if .Project.ID}}{{template "copyfield" (dict "Text" .Project.ID "Label" "project id")}}<br><a href="{{.ProjectURL}}" target="_blank">open STACKIT console ↗</a>{{else}}<span class="muted">—</span>{{end}}</dd>
+      <dt>service account</dt><dd>{{if .Project.ServiceAccount.Email}}{{template "copyfield" (dict "Text" .Project.ServiceAccount.Email "Label" "service account")}}<br><a href="/users/{{.Slug}}/sa-key.json" download>download key JSON ⤓</a>{{else}}<span class="muted">—</span>{{end}}</dd>
+      <dt>terraform</dt><dd>{{if .TFZip}}<a href="/users/{{.Slug}}/terraform.zip" download>download terraform project zip ⤓</a> <small class="muted">(code, state, service account key)</small>{{if not .Terraform.AppliedAt.IsZero}} <small class="muted">applied {{time .Terraform.AppliedAt}}</small>{{end}}{{else}}<span class="muted">not deployed</span>{{end}}</dd>
+      {{with .Jumphost}}
+      <dt>jumphost</dt><dd>{{template "copyfield" (dict "Text" .FQDN "Label" "jumphost host name")}}{{if .IP}}<br>{{template "copyfield" (dict "Text" .IP "Label" "jumphost IP")}}{{end}}</dd>
+      <dt>jumphost ssh</dt><dd>{{template "copyfield" (dict "Text" .SSHCommand "Label" "ssh command")}}<br><small class="muted">user</small> {{template "copyfield" (dict "Text" .User "Label" "ssh user")}} <small class="muted">password</small> {{template "copyfield" (dict "Text" .Password "Label" "ssh password")}}</dd>
+      <dt>web shell</dt><dd><a href="{{.WebshellURL}}" target="_blank">open web shell ↗</a> <small class="muted">({{.PlainURL}}, logs in automatically)</small><br><small class="muted">user</small> {{template "copyfield" (dict "Text" "shell" "Label" "web shell user")}} <small class="muted">password</small> {{template "copyfield" (dict "Text" .Password "Label" "web shell password")}}</dd>
+      {{end}}
+      <dt>meshStack workspace</dt><dd>{{if .MeshstackWorkspace}}{{template "copyfield" (dict "Text" .MeshstackWorkspace "Label" "workspace id")}}<br><a href="{{.WorkspaceURL}}" target="_blank">open meshStack ↗</a>{{else}}<span class="muted">—</span>{{end}}</dd>
+      <dt>created</dt><dd>{{time .CreatedAt}}</dd>
+      <dt>updated</dt><dd>{{time .UpdatedAt}}</dd>
+      {{if .Notes}}<dt>notes</dt><dd class="muted">{{.Notes}}</dd>{{end}}
+    </dl>
+    <h4>Timeline</h4>
+    <dl>{{range .Timeline}}<dt>{{.Step}}</dt><dd>{{time .At}}</dd>{{end}}</dl>
+  </div>
+
+  <div class="card">
+    <h3>Participant</h3>
+    <form data-signals="{pname: {{jsq .Participant.Name}}, pemail: {{jsq .Participant.Email}}}" data-on:submit="evt.preventDefault(); @post('/users/{{.Slug}}/participant')">
+      <input data-bind:pname placeholder="name"> <input data-bind:pemail placeholder="e-mail" type="email"> <button type="submit">save</button>
+    </form>
+    <h3>Project</h3>
+    <form data-signals="{project: {{jsq .Project.ID}}}" data-on:submit="evt.preventDefault(); @post('/users/{{.Slug}}/project')">
+      <input data-bind:project placeholder="STACKIT project UUID" size="40"> <button type="submit">save</button>
+    </form>
+    <h3>Actions</h3>
+    <div class="actions">
+      {{if .Running}}<span class="badge running">running: {{.Job.Name}}</span>{{else}}
+      {{if .CanOnboard}}<button class="primary" data-on:click="@post('/users/{{.Slug}}/run/onboard')">onboard (all remaining steps)</button>{{end}}
+      <button data-on:click="@post('/users/{{.Slug}}/run/register')" {{if stepReached .User "registered"}}disabled{{end}}>register</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/verify-email')" {{if or (not (stepReached .User "registered")) (stepReached .User "email_verified")}}disabled{{end}}>verify e-mail</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/resend-verification')" {{if or (not (stepReached .User "registered")) (stepReached .User "email_verified")}}disabled{{end}}>resend verification mail</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/setup-otp')" {{if or (not (stepReached .User "email_verified")) (stepReached .User "otp_enabled")}}disabled{{end}}>set up OTP</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/setup-otp?force=1')" {{if not (stepReached .User "otp_enabled")}}disabled{{end}} title="log in with the stored secret">test login</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/mesh-project')" {{if or (not (stepReached .User "otp_enabled")) (stepReached .User "project_assigned")}}disabled{{end}}>create meshStack project</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/service-account')" {{if or (not (stepReached .User "project_assigned")) (stepReached .User "service_account_created")}}disabled{{end}}>create service account</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/terraform{{if stepReached .User "terraform_deployed"}}?force=1{{end}}')" {{if not .CanTerraform}}disabled{{end}} title="terraform init + apply + zip">{{if stepReached .User "terraform_deployed"}}re-apply terraform{{else}}deploy terraform{{end}}</button>
+      <button data-on:click="@post('/users/{{.Slug}}/run/terraform-zip')" {{if not .Terraform.Dir}}disabled{{end}} title="re-create the zip from the project directory">re-zip</button>
+      {{end}}
+    </div>
+    {{if .TFOutputs}}<details><summary>terraform outputs (output/project.env)</summary><pre class="wrap">{{.TFOutputs}}</pre></details>{{end}}
+    {{if .KeyJSON}}<details><summary>service account key ({{.Project.ServiceAccount.KeyFile}}) · <a href="/users/{{.Slug}}/sa-key.json" download>download</a></summary><pre class="wrap">{{.KeyJSON}}</pre></details>{{end}}
+    {{with .Job}}
+    <h4>Last job: {{.Name}} <small class="muted">{{time .Started}}</small> {{if .Err}}<span class="err">failed</span>{{else if not .Running}}<span class="ok">ok</span>{{end}}</h4>
+    <pre>{{range lines . 40}}{{.}}
+{{end}}</pre>
+    {{end}}
+  </div>
+
+  <div class="card">
+    <h3>E-mails <button data-on:click="@post('/users/{{.Slug}}/mail/sync')" title="fetch from MailHog now">sync</button></h3>
+    {{if .Mails}}
+    <table>
+      <thead><tr><th>received</th><th>from</th><th>subject</th></tr></thead>
+      <tbody>{{range .Mails}}<tr>
+        <td>{{time .Message.Created}}</td><td>{{.Message.FromAddress}}</td>
+        <td><a href="/users/{{$.Slug}}/mail/{{.File}}">{{.Message.Subject}}</a></td>
+      </tr>{{end}}</tbody>
+    </table>
+    {{else}}<p class="muted">no mails archived yet</p>{{end}}
+  </div>
+
+  <div class="card shots">
+    <h3>Screenshots</h3>
+    {{range .Screenshots}}<p><a href="/screenshots/{{.}}" target="_blank"><img src="/screenshots/{{.}}" alt="{{.}}" loading="lazy"><br><small>{{.}}</small></a></p>{{else}}<p class="muted">none</p>{{end}}
+    {{if .Dumps}}<h4>HTML dumps</h4><ul>{{range .Dumps}}<li><a href="/screenshots/{{.}}" target="_blank">{{.}}</a></li>{{end}}</ul>{{end}}
+  </div>
+</div>{{end}}

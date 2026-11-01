@@ -1,0 +1,65 @@
+{{define "head"}}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · stackit-ws-manager</title>
+<script type="module" src="/static/datastar.js"></script>
+<style>
+  :root { --bg:#fafafa; --fg:#222; --muted:#777; --line:#ddd; --accent:#00a0a8; }
+  body { font: 14px/1.4 system-ui, sans-serif; margin: 0; background: var(--bg); color: var(--fg); }
+  header { display:flex; align-items:center; gap:1rem; padding:.6rem 1rem; border-bottom:1px solid var(--line); background:#fff; }
+  header h1 { font-size:1.1rem; margin:0; } header a { color:inherit; text-decoration:none; }
+  main { padding: 1rem; }
+  table { border-collapse: collapse; width: 100%; background:#fff; }
+  th, td { text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); vertical-align: middle; white-space: nowrap; }
+  th { font-weight:600; color:var(--muted); font-size:.8rem; text-transform:uppercase; }
+  code { font-family: ui-monospace, monospace; background:#f1f1f1; padding:.1rem .3rem; border-radius:3px; }
+  button { font: inherit; padding:.15rem .45rem; border:1px solid #bbb; border-radius:4px; background:#fff; cursor:pointer; }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); color:#fff; border-color: var(--accent); }
+  button:disabled { opacity:.5; cursor:default; }
+  input { font: inherit; padding:.25rem .4rem; border:1px solid #bbb; border-radius:4px; }
+  .badge { display:inline-block; padding:.1rem .5rem; border-radius:999px; font-size:.8rem; background:#eee; }
+  .s0 { background:#eee; } .s1 { background:#fff3cd; } .s2 { background:#d1ecf1; } .s3 { background:#d4edda; } .s4 { background:#c3e6cb; }
+  .s5 { background:#d4edda; } .s6 { background:#9fd8b0; } .running { background:#e2d9f3; }
+  .muted { color: var(--muted); } .ok { color:#2a7; } .err { color:#c33; }
+  .otp { font-size:1.1rem; letter-spacing:.1em; }
+  input.copy { font-family: ui-monospace, monospace; background:#f6f6f6; border:1px solid #e3e3e3; padding:.15rem .35rem; cursor:text; max-width:100%; box-sizing:border-box; }
+  input.copy.otp { font-size:1.1rem; letter-spacing:.1em; width:6.5em; }
+  form.add { display:flex; gap:.5rem; align-items:center; flex-wrap:wrap; margin-bottom:1rem; }
+  pre { background:#f5f5f5; padding:.5rem; overflow:auto; max-height: 20rem; }
+  pre.wrap { white-space: pre-wrap; word-break: break-all; max-height: 40rem; }
+  dl { display:grid; grid-template-columns: max-content minmax(0,1fr); gap:.3rem 1rem; } dt { color:var(--muted); } dd { margin:0; min-width:0; }
+  .cards { display:grid; grid-template-columns: repeat(auto-fit, minmax(420px,1fr)); gap:1rem; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:6px; padding:.8rem; min-width:0; overflow-x:auto; }
+  .card td, .card th, .card dd { white-space: normal; }
+  .card code { word-break: break-all; }
+  .card h3 { margin-top:0; }
+  .shots img { max-width: 100%; border:1px solid var(--line); }
+  .actions { display:flex; gap:.4rem; flex-wrap:wrap; }
+  .toast { position:fixed; bottom:1rem; right:1rem; background:#333; color:#fff; padding:.4rem .8rem; border-radius:4px; opacity:0; transition:opacity .2s; }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<header>
+  <h1><a href="/">stackit-ws-manager</a></h1>
+  <span class="muted">{{.Subtitle}}</span>
+  <span style="flex:1"></span>
+  {{if .Auth}}<form method="post" action="/logout"><button>logout</button></form>{{end}}
+</header>
+<main>{{end}}
+
+{{define "foot"}}
+<div id="toast" class="toast" data-signals:toast__ifmissing="''" data-class:show="$toast != ''" data-text="$toast"></div>
+</main>
+</body>
+</html>{{end}}
+
+{{/* copy button: copies text and shows a toast for a moment */}}
+{{/* note: html/template treats data-on:* as JS context, so plain {{.Text}} becomes a quoted JS string */}}
+{{define "copy"}}<button title="copy {{.Label}}" data-on:click="navigator.clipboard.writeText({{.Text}}); $toast = {{printf "%s copied" .Label}}; setTimeout(() => $toast = '', 1200)">⧉</button>{{end}}
+
+{{/* read-only input that selects its whole value on click, plus a copy button */}}
+{{define "copyfield"}}<input class="copy{{if .Class}} {{.Class}}{{end}}" readonly value="{{.Text}}" size="{{if .Size}}{{.Size}}{{else}}{{len .Text}}{{end}}" onclick="this.select()" title="click to select, {{.Label}}"> {{template "copy" .}}{{end}}

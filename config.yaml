@@ -1,0 +1,38 @@
+# stackit-ws-manager configuration
+catchall_domain: bosch.runs.onstackit.cloud
+mailhog_url: https://mail.bosch.runs.onstackit.cloud
+users_file: users.yaml
+portal_url: https://portal.stackit.cloud/
+mail:
+    wait_timeout: 10m0s
+    poll_interval: 5s
+browser:
+    headless: true
+    slow_mo: 0s
+    timeout: 30s
+    locale: de-DE
+    screenshot_dir: screenshots
+web:
+    listen: :8080
+    password: workshop
+    auth_enabled: true
+    mail_dir: mail
+    mail_sync_interval: 30s
+meshstack:
+    setup_url: https://setup.try.meshstack.io/?ref=stackit-university
+    setup_timeout: 20m0s
+    service_account_name: ws
+    service_account_role: owner
+    key_dir: keys
+urls:
+    stackit_project: https://portal.stackit.cloud/projects/{id}
+    meshstack_workspace: https://try.meshstack.io/#/w/{id}/overview
+terraform:
+    binary: terraform
+    region: eu01
+    template_dir: terraform-template
+    work_dir: terraform
+    tfvars:
+        name_prefix: tn
+        name_suffix: g{slug}
+        domain: bosch-lz{slug}.runs.onstackit.cloud

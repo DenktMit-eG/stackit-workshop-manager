@@ -1,0 +1,9 @@
+{{define "login"}}{{template "head" (dict "Title" "Login" "Subtitle" "" "Auth" false)}}
+<div class="card" style="max-width:24rem">
+  <h3>Login</h3>
+  {{if .Error}}<p class="err">{{.Error}}</p>{{end}}
+  <form method="post" action="/login">
+    <input type="password" name="password" placeholder="password" autofocus> <button class="primary" type="submit">enter</button>
+  </form>
+</div>
+{{template "foot" .}}{{end}}

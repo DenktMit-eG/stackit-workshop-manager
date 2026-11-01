@@ -1,0 +1,44 @@
+{{define "index"}}{{template "head" (dict "Title" "Users" "Subtitle" "workshop accounts" "Auth" .Auth)}}
+<form class="add" data-signals="{slug: '', name: '', email: ''}" data-on:submit="evt.preventDefault(); @post('/users')">
+  <strong>Add user</strong>
+  <input data-bind:slug placeholder="slug (→ slug@{{.Domain}})" required>
+  <input data-bind:name placeholder="participant name">
+  <input data-bind:email placeholder="participant e-mail" type="email">
+  <button class="primary" type="submit">create</button>
+  <div id="add-msg" class="muted"></div>
+</form>
+<div data-init="@get('/events'); @get('/otps')">
+<table>
+  <thead><tr><th>User</th><th>Username</th><th>Password</th><th>OTP</th><th>State</th><th></th></tr></thead>
+  {{template "rows" .}}
+</table>
+</div>
+{{template "foot" .}}{{end}}
+
+{{define "rows"}}<tbody id="users">
+{{range .Rows}}
+<tr id="row-{{.ID}}" data-signals:reveal_{{.ID}}__ifmissing="false">
+  <td><a href="/users/{{.Slug}}"><strong>{{.Slug}}</strong></a>{{if .Participant.Name}}<br><small class="muted">{{.Participant.Name}}</small>{{end}}</td>
+  <td>{{template "copyfield" (dict "Text" .Username "Label" "username")}}</td>
+  <td>
+    <span data-show="!$reveal_{{.ID}}"><input class="copy" readonly type="password" value="{{.Password}}" size="{{len .Password}}" onclick="this.select()"></span>
+    <span data-show="$reveal_{{.ID}}"><input class="copy" readonly value="{{.Password}}" size="{{len .Password}}" onclick="this.select()"></span>
+    <button title="show/hide" data-on:click="$reveal_{{raw .ID}} = !$reveal_{{raw .ID}}">👁</button>
+    {{template "copy" (dict "Text" .Password "Label" "password")}}
+  </td>
+  {{template "otpcell" (dict "ID" (printf "otp-%s" .ID) "Tag" "td" "Code" .OTP "Valid" .OTPValid "HasSecret" (ne .OTPSecret ""))}}
+  <td><span class="badge {{.StateClass}}">{{.State}}</span></td>
+  <td><a href="/users/{{.Slug}}"><button>details</button></a></td>
+</tr>
+{{else}}
+<tr><td colspan="6" class="muted">no users yet</td></tr>
+{{end}}
+</tbody>{{end}}
+
+{{define "otpcell"}}{{if eq .Tag "span"}}<span id="{{.ID}}">{{else}}<td id="{{.ID}}">{{end}}
+{{- if .HasSecret -}}
+  {{template "copyfield" (dict "Text" .Code "Label" "OTP" "Class" "otp")}} <small class="muted">{{.Valid}}s</small>
+{{- else -}}
+  <span class="muted" title="no OTP secret yet">—</span>
+{{- end -}}
+{{if eq .Tag "span"}}</span>{{else}}</td>{{end}}{{end}}
